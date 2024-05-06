@@ -129,7 +129,7 @@ class UserController extends Controller {
       msg: '请求成功',
       data: {
         id: userInfo.id,
-        userInfo: userInfo.username,
+        username: userInfo.username,
         signature: userInfo.signature,
         avatar: userInfo.avatar || defaultAvatar,
       },
@@ -167,6 +167,63 @@ class UserController extends Controller {
       ctx.body = {
         code: 500,
         msg: '编辑失败',
+        data: null,
+      };
+    }
+  }
+
+  // 修改密码
+  async modifyPass() {
+    const { ctx, app } = this;
+    // 通过post接口获取用户修改的signaturen,avatar
+    const { old_pass, new_pass, again_pass } = ctx.request.body;
+    try {
+      const token = ctx.request.header.authorization;
+      const decode = await app.jwt.verify(token, app.config.jwt.secret);
+      if (!decode) return;
+      const userInfo = await ctx.service.user.getUserByName(decode.username);
+      if (!old_pass || !new_pass || !again_pass) {
+        ctx.body = {
+          code: 500,
+          msg: '参数错误',
+          data: null,
+        };
+        return;
+      }
+      if (new_pass !== again_pass) {
+        ctx.body = {
+          code: 500,
+          msg: '新密码输入不一致',
+          data: null,
+        };
+        return;
+      }
+      if (old_pass !== userInfo.password) {
+        ctx.body = {
+          code: 500,
+          msg: '原密码不正确',
+          data: null,
+        };
+        return;
+      }
+      if (old_pass !== userInfo.password) {
+        ctx.body = {
+          code: 500,
+          msg: '原密码不正确',
+          data: null,
+        };
+        return;
+      }
+      await ctx.service.user.editUserInfo({ ...userInfo, password: new_pass });
+      ctx.body = {
+        code: 200,
+        msg: '修改成功',
+        data: null,
+      };
+    } catch (error) {
+      ctx.body = {
+        code: 500,
+        msg: '修改失败',
         data: null,
       };
     }

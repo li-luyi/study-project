@@ -53,7 +53,7 @@ class BillController extends Controller {
   async list() {
     const { ctx, app } = this;
     // 获取日期date,分页数据，类型type_id
-    const { date, page = 1, page_size = 5, type_id = 'all' } = ctx.request.body;
+    const { date, page = 1, page_size = 5, type_id = 'all' } = ctx.query;
     try {
       const token = ctx.request.header.authorization;
       const decode = await app.jwt.verify(token, app.config.jwt.secret);
@@ -66,7 +66,8 @@ class BillController extends Controller {
       const _list = list.filter(item => {
         // 默认all查询全部数据
         if (type_id !== 'all') {
-          return moment(item.date).format('YYYY-MM') === _date && type_id === item.type_id;
+          // eslint-disable-next-line eqeqeq
+          return moment(item.date).format('YYYY-MM') === _date && type_id == item.type_id;
         }
         return moment(item.date).format('YYYY-MM') === _date;
       });
@@ -77,20 +78,20 @@ class BillController extends Controller {
         // 如果找到当前日期的往里追加数据
         if (curr && curr.length && curr.findIndex(c => moment(c.date).format('YYYY-MM-DD') === date) > -1) {
           const index = curr.findIndex(c => moment(c.date).format('YYYY-MM-DD') === date);
-          curr[index].bills.push(item);
+          curr[index].bills.push({ ...item, date: moment(item.date).format('YYYY-MM-DD HH:mm:ss') });
         }
         // 如果找不到就新建一组当前日期的数据
         if (curr && curr.length && curr.findIndex(c => moment(c.date).format('YYYY-MM-DD') === date) === -1) {
           curr.push({
             date,
-            bills: [item],
+            bills: [{ ...item, date: moment(item.date).format('YYYY-MM-DD HH:mm:ss') }],
           });
         }
         // 如果curr为空数组，则默认添加第一个账单项
         if (!curr.length) {
           curr.push({
             date,
-            bills: [item],
+            bills: [{ ...item, date: moment(item.date).format('YYYY-MM-DD HH:mm:ss') }],
           });
         }
         return curr;
@@ -105,7 +106,6 @@ class BillController extends Controller {
         if (item.pay_type === 1) {
           curr += Number(item.amount);
         }
-        console.log(curr, 'curr');
         return curr;
       }, 0);
 
@@ -264,7 +264,7 @@ class BillController extends Controller {
       // 根据时间参数，筛选出当月的所有的账单数据
       const start = moment(date).startOf('month').unix() * 1000;
       const end = moment(date).endOf('month').unix() * 1000;
-      const _data = result.filter(item => (Number(new Date(item.date)) > start && Number(new Date(item.date)) < end));
+      const _data = result.filter(item => (Number(new Date(item.date)) >= start && Number(new Date(item.date)) < end));
       // 总支出
       const total_expense = _data.reduce((arr, cur) => {
         if (cur.pay_type === 1) {

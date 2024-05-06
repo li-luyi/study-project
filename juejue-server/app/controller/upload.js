@@ -10,8 +10,6 @@ const Controller = require('egg').Controller;
 class UploadController extends Controller {
   async upload() {
     const { ctx } = this;
-
-    console.log('ctx.request.files', ctx.request.files);
     const file = ctx.request.files[0];
 
     let uploadDir = '';
